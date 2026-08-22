@@ -41,7 +41,7 @@ Self-hosters bring their own API keys — none ship with this repo.
 Spindle is **source-available under the [PolyForm Noncommercial License 1.0.0](./LICENSE.md)**.
 
 - ✅ **Free** for any noncommercial purpose, including **self-hosting for yourself**.
-- ❌ **Commercial use is not granted** by the license. Want to use Spindle commercially? **Contact Rimon Hanna** for commercial terms.
+- ❌ **Commercial use is not granted** by the license. Want to use Spindle commercially? **Contact me** for commercial terms.
 
 This is *source-available*, not OSI "open source" — the noncommercial restriction is deliberate.
 
