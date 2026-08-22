@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spindle · listen → identify</title>
+<style>
+  :root { --paper:#f4ecd8; --black:#12100c; --red:#f0362b; --blue:#2b4cf0; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; background:var(--paper); color:var(--black);
+    font-family:"Work Sans",system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; text-align:center;
+  }
+  h1 { font-family:"Anton",system-ui,sans-serif; font-weight:900;
+       font-size:clamp(48px,14vw,120px); margin:0; text-transform:uppercase;
+       text-shadow:5px 5px 0 var(--red); letter-spacing:.01em; }
+  h1 .s { color:var(--blue); text-shadow:5px 5px 0 var(--black); }
+  p.tag { font-size:15px; letter-spacing:.14em; text-transform:uppercase; margin:.3em 0 2em; }
+  button {
+    font:700 15px/1 "Space Mono",monospace; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--black); color:var(--paper); border:0; padding:20px 34px; cursor:pointer;
+  }
+  button:disabled { opacity:.4; cursor:default; }
+  button.rec { background:var(--red); color:var(--black); }
+  #status { margin-top:22px; font:13px/1.5 "Space Mono",monospace; min-height:1.5em; }
+  #result { margin-top:26px; max-width:460px; }
+  #result .card { background:#fff; border:3px solid var(--black); box-shadow:8px 8px 0 var(--red);
+    padding:20px 22px; text-align:left; }
+  #result .title { font-family:"Anton",system-ui,sans-serif; font-size:30px; text-transform:uppercase; line-height:1; margin:0; }
+  #result .artist { font-size:18px; margin:6px 0 14px; }
+  #result .meta { font:12px/1.6 "Space Mono",monospace; letter-spacing:.08em; text-transform:uppercase; color:#555; }
+  #result a { color:var(--blue); font:700 12px "Space Mono",monospace; text-transform:uppercase; }
+  #result .none { font:13px "Space Mono",monospace; }
+</style>
+</head>
+<body>
+  <h1>SPINDLE<span class="s">.</span></h1>
+  <p class="tag">Hear it, don't type it</p>
+  <button id="go">● Listen to the record</button>
+  <div id="status"></div>
+  <div id="result"></div>
+
+<script>
+const go = document.getElementById('go');
+const statusEl = document.getElementById('status');
+const resultEl = document.getElementById('result');
+const MAX_MS = 15000;
+let rec, chunks, timer;
+
+go.onclick = () => rec && rec.state === 'recording' ? rec.stop() : start();
+
+async function start() {
+  resultEl.innerHTML = '';
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    statusEl.textContent = 'Mic permission denied.';
+    return;
+  }
+  chunks = [];
+  rec = new MediaRecorder(stream);
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => { clearTimeout(timer); stream.getTracks().forEach(t => t.stop()); identify(); };
+  rec.start();
+  go.textContent = '■ Stop & identify';
+  go.classList.add('rec');
+  statusEl.textContent = 'Listening… (auto-stops in 15s)';
+  timer = setTimeout(() => rec.state === 'recording' && rec.stop(), MAX_MS);
+}
+
+async function identify() {
+  go.textContent = '● Listen to the record';
+  go.classList.remove('rec');
+  go.disabled = true;
+  statusEl.textContent = 'Identifying the pressing…';
+  try {
+    const blob = new Blob(chunks, { type: 'audio/webm' });
+    const r = await fetch('/api/identify', { method: 'POST', body: blob });
+    render(await r.json());
+  } catch (e) {
+    statusEl.textContent = 'Request failed: ' + e;
+  } finally {
+    go.disabled = false;
+  }
+}
+
+function render(data) {
+  if (data.status !== 'success') {
+    statusEl.textContent = 'AudD error: ' + (data.error?.error_message || data.error || 'unknown');
+    return;
+  }
+  const m = data.result;
+  if (!m) {
+    statusEl.textContent = 'No match — try a louder or longer sample.';
+    resultEl.innerHTML = '<div class="card"><p class="none">Nothing recognized this time.</p></div>';
+    return;
+  }
+  statusEl.textContent = 'Match.';
+  const links = [
+    m.apple_music?.url && `<a href="${m.apple_music.url}" target="_blank" rel="noopener">Apple Music ↗</a>`,
+    m.spotify?.external_urls?.spotify && `<a href="${m.spotify.external_urls.spotify}" target="_blank" rel="noopener">Spotify ↗</a>`,
+  ].filter(Boolean).join(' · ');
+  resultEl.innerHTML = `<div class="card">
+    <p class="title">${esc(m.title)}</p>
+    <p class="artist">${esc(m.artist)}</p>
+    <p class="meta">${esc(m.album || '')}${m.release_date ? ' · ' + esc(m.release_date) : ''}${m.label ? ' · ' + esc(m.label) : ''}</p>
+    ${links ? '<p style="margin-top:12px">' + links + '</p>' : ''}
+  </div>`;
+}
+
+const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]));
+</script>
+</body>
+</html>

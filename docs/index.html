@@ -489,7 +489,7 @@
   <section id="roadmap">
     <div class="sec-head reveal"><span class="idx">C1</span><h2>Roadmap, smallest useful thing first.</h2></div>
     <ol class="road reveal">
-      <li><div class="h">Web MVP: listen → identify <span class="now">NEXT</span></div><div class="d">A browser page that records a few seconds, calls the fingerprinter, and names the record. Proves the core before any app store.</div></li>
+      <li><div class="h">Web MVP: listen → identify <span class="now">NEXT</span></div><div class="d">A browser page that records a few seconds, calls the fingerprinter, and names the record. No database yet — a static page plus one proxy function on Vercel's free tier. Proves the core before any app store.</div></li>
       <li><div class="h">Capture loop + scrobble</div><div class="d">Confirm the match, save the play, scrobble to Last.fm. The first genuinely useful version.</div></li>
       <li><div class="h">Collection + profile</div><div class="d">Your logged plays become a collection and a public listening profile.</div></li>
       <li><div class="h">Buy-next recommendations</div><div class="d">Claude over your history, filtered to in-print and in stock.</div></li>
@@ -504,9 +504,11 @@
       <table>
         <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
         <tbody>
-          <tr><td>App</td><td><strong>Expo (React Native) + TS</strong></td><td>One codebase, iOS first.</td></tr>
-          <tr><td>Backend</td><td><strong>Supabase</strong></td><td>Postgres, auth, storage, realtime, edge functions.</td></tr>
-          <tr><td>Fingerprinting</td><td><strong>AudD / ACRCloud</strong></td><td>Rented reference catalog.</td></tr>
+          <tr><td>Language</td><td><strong>TypeScript everywhere</strong></td><td>One language browser → phone → server; no context-switch tax for a solo dev.</td></tr>
+          <tr><td>App</td><td><strong>Expo (React Native) + TS</strong></td><td>One codebase, iOS first. (Flutter would mean Dart, an island in an all-TS stack.)</td></tr>
+          <tr><td>Backend</td><td><strong>Supabase</strong> (edge functions in Deno/TS)</td><td>Postgres, auth, storage, realtime, functions — one service, same language.</td></tr>
+          <tr><td>Hosting</td><td><strong>Vercel + Supabase, free tiers</strong></td><td>Vercel serves the web page &amp; proxy functions; Supabase is the data plane. $0 to run the POC.</td></tr>
+          <tr><td>Fingerprinting</td><td><strong>AudD / ACRCloud</strong></td><td>Rented reference catalog — the one paid piece.</td></tr>
           <tr><td>Metadata</td><td><strong>Discogs</strong></td><td>Pressings, catalog numbers, marketplace.</td></tr>
           <tr><td>Scrobble</td><td><strong>Last.fm</strong></td><td>Where listening history already lives.</td></tr>
           <tr><td>Recommendations</td><td><strong>Claude API</strong></td><td>Recs and taste insights over your data.</td></tr>

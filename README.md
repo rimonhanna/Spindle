@@ -22,14 +22,42 @@ Why fingerprinting and not "just ask an AI"? Identifying a specific recording is
 
 | Layer | Pick |
 |---|---|
+| Language | **TypeScript everywhere** (browser → phone → server) |
 | App | Expo (React Native) + TypeScript |
-| Backend / auth / realtime | Supabase |
+| Backend / auth / realtime | Supabase (edge functions in Deno/TypeScript) |
+| Hosting | Vercel + Supabase, free tiers |
 | Fingerprinting | AudD (→ ACRCloud if needed) |
 | Metadata & marketplace | Discogs API |
 | Scrobble | Last.fm API |
 | Recommendations | Claude API |
 
+**Why these:** TypeScript is the through-line — one language across the web page, the phone app, and the backend functions, which for a solo dev beats a faster tool in a second language (hence Expo/RN over Flutter's Dart, and Deno/TS edge functions over a separate Node or Python service). Vercel hosts the web page and proxy functions; Supabase is the data plane called from both web and app. Both run on free tiers, so the only thing that costs money is AudD, the rented fingerprinter.
+
 Self-hosters bring their own API keys; none ship with this repo.
+
+## Run the web MVP
+
+Phase 1 is a browser page that records a few seconds and names the pressing — a static page (`public/`) plus one proxy function (`api/identify.ts`) that hides the AudD key. No build step, no dependencies.
+
+Local dev:
+
+```
+npx vercel dev          # serves public/ and api/ on http://localhost:3000
+```
+
+Deploy free:
+
+```
+npx vercel              # first push; add AUDD_API_TOKEN in the Vercel project env
+```
+
+Open the page, click **Listen**, play a record. Get an AudD token at https://dashboard.audd.io; without one it runs in a heavily rate-limited demo mode.
+
+Test the proxy in isolation (no API quota used):
+
+```
+node api/identify.test.mjs
+```
 
 ## Roadmap
 
