@@ -53,10 +53,13 @@ npx vercel              # first push; add AUDD_API_TOKEN in the Vercel project e
 
 Open the page, click **Listen**, play a record. Get an AudD token at https://dashboard.audd.io; without one it runs in a heavily rate-limited demo mode.
 
-Test the proxy in isolation (no API quota used):
+**Scrobbling (optional, no database):** register a Last.fm API app at https://www.last.fm/api/account/create and set `LASTFM_API_KEY` + `LASTFM_SECRET` in the project env, with the app's callback URL pointing at `/api/lastfm`. Then the page shows **Connect Last.fm**; once connected, each match gets a **Confirm & scrobble** button. The session key lives in your browser's `localStorage` — Spindle stores nothing server-side yet.
+
+Test the proxies in isolation (no API quota used):
 
 ```
 node api/identify.test.mjs
+node api/lastfm.test.mjs
 ```
 
 ## Roadmap

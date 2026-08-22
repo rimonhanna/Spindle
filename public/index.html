@@ -24,7 +24,12 @@
   }
   button:disabled { opacity:.4; cursor:default; }
   button.rec { background:var(--red); color:var(--black); }
+  #lastfm { margin-top:16px; font:12px/1.5 "Space Mono",monospace; letter-spacing:.06em; text-transform:uppercase; }
+  #lastfm a { color:var(--blue); font-weight:700; cursor:pointer; }
   #status { margin-top:22px; font:13px/1.5 "Space Mono",monospace; min-height:1.5em; }
+  #result .scrobble { margin-top:14px; font:700 12px "Space Mono",monospace; letter-spacing:.06em;
+    text-transform:uppercase; background:var(--blue); color:#fff; border:0; padding:12px 18px; cursor:pointer; }
+  #result .scrobble:disabled { opacity:.5; cursor:default; }
   #result { margin-top:26px; max-width:460px; }
   #result .card { background:#fff; border:3px solid var(--black); box-shadow:8px 8px 0 var(--red);
     padding:20px 22px; text-align:left; }
@@ -39,6 +44,7 @@
   <h1>SPINDLE<span class="s">.</span></h1>
   <p class="tag">Hear it, don't type it</p>
   <button id="go">● Listen to the record</button>
+  <div id="lastfm"></div>
   <div id="status"></div>
   <div id="result"></div>
 
@@ -46,10 +52,25 @@
 const go = document.getElementById('go');
 const statusEl = document.getElementById('status');
 const resultEl = document.getElementById('result');
+const lastfmEl = document.getElementById('lastfm');
 const MAX_MS = 15000;
-let rec, chunks, timer;
+let rec, chunks, timer, match;
 
 go.onclick = () => rec && rec.state === 'recording' ? rec.stop() : start();
+
+// --- Last.fm connection (stored client-side; no DB) ---
+function lastfm() {
+  try { return JSON.parse(localStorage.getItem('spindle.lastfm') || 'null'); } catch { return null; }
+}
+function renderLastfm() {
+  const s = lastfm();
+  lastfmEl.innerHTML = s?.sk
+    ? `Last.fm: ${esc(s.user)} · <a id="disc">disconnect</a>`
+    : `<a href="/api/lastfm">Connect Last.fm to scrobble ↗</a>`;
+  const d = document.getElementById('disc');
+  if (d) d.onclick = () => { localStorage.removeItem('spindle.lastfm'); renderLastfm(); };
+}
+renderLastfm();
 
 async function start() {
   resultEl.innerHTML = '';
@@ -92,7 +113,7 @@ function render(data) {
     statusEl.textContent = 'AudD error: ' + (data.error?.error_message || data.error || 'unknown');
     return;
   }
-  const m = data.result;
+  const m = match = data.result;
   if (!m) {
     statusEl.textContent = 'No match — try a louder or longer sample.';
     resultEl.innerHTML = '<div class="card"><p class="none">Nothing recognized this time.</p></div>';
@@ -103,15 +124,41 @@ function render(data) {
     m.apple_music?.url && `<a href="${m.apple_music.url}" target="_blank" rel="noopener">Apple Music ↗</a>`,
     m.spotify?.external_urls?.spotify && `<a href="${m.spotify.external_urls.spotify}" target="_blank" rel="noopener">Spotify ↗</a>`,
   ].filter(Boolean).join(' · ');
+  const canScrobble = !!lastfm()?.sk;
   resultEl.innerHTML = `<div class="card">
     <p class="title">${esc(m.title)}</p>
     <p class="artist">${esc(m.artist)}</p>
     <p class="meta">${esc(m.album || '')}${m.release_date ? ' · ' + esc(m.release_date) : ''}${m.label ? ' · ' + esc(m.label) : ''}</p>
     ${links ? '<p style="margin-top:12px">' + links + '</p>' : ''}
+    ${canScrobble
+      ? '<button class="scrobble" id="scrob">Confirm &amp; scrobble</button>'
+      : '<p class="meta" style="margin-top:12px"><a href="/api/lastfm" style="color:var(--blue)">Connect Last.fm</a> to scrobble</p>'}
   </div>`;
+  const btn = document.getElementById('scrob');
+  if (btn) btn.onclick = () => scrobble(btn);
 }
 
-const esc = s => String(s ?? '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]));
+async function scrobble(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Scrobbling…';
+  try {
+    const r = await fetch('/api/lastfm', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        artist: match.artist, track: match.title,
+        timestamp: Math.floor(Date.now() / 1000), sk: lastfm().sk,
+      }),
+    });
+    const d = await r.json();
+    const ok = d?.scrobbles?.['@attr']?.accepted > 0 || d?.scrobbles?.scrobble;
+    btn.textContent = ok ? '✓ Scrobbled' : 'Scrobble failed';
+  } catch {
+    btn.textContent = 'Scrobble failed';
+  }
+}
+
+function esc(s) { return String(s ?? '').replace(/[<>&]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c])); }
 </script>
 </body>
 </html>
