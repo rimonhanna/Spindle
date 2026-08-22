@@ -1,5 +1,7 @@
 # Spindle 🎵
 
+### [▶ See the plan &amp; roadmap](https://rimonhanna.github.io/spindle/)
+
 **Hear it, don't type it.** Put a record on, and Spindle listens, identifies the *exact* pressing playing, logs it, scrobbles it to Last.fm, and over time learns your taste to tell you what to spin and buy next.
 
 > ⚠️ **Status: early / placeholder.** This repo is the starting point. Nothing is built yet; the plan and scaffolding land first, code follows.
