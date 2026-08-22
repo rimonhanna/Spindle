@@ -3,7 +3,7 @@ Required Notice: Copyright 2026 Rimon Hanna (https://rimonhanna.com)
 
 Spindle is source-available under the PolyForm Noncommercial License 1.0.0.
 Free for any noncommercial purpose, including self-hosting for personal use.
-Commercial use is NOT granted by this license — for commercial terms,
+Commercial use is NOT granted by this license. For commercial terms,
 contact me. See CONTRIBUTING.md for the contributor agreement.
 -->
 
