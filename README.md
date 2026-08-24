@@ -4,7 +4,7 @@
 
 **Hear it, don't type it.** Put a record on, and Spindle listens, identifies the *exact* pressing playing, logs it, scrobbles it to Last.fm, and over time learns your taste to tell you what to spin and buy next.
 
-> ⚠️ **Status: early / placeholder.** This repo is the starting point. Nothing is built yet; the plan and scaffolding land first, code follows.
+> **Status:** listen → identify → log + scrobble works in code (web MVP, zero-database origins now backed by Supabase). Not yet smoke-tested against a real record.
 
 ---
 
@@ -53,7 +53,12 @@ npx vercel              # first push; add AUDD_API_TOKEN in the Vercel project e
 
 Open the page, click **Listen**, play a record. Get an AudD token at https://dashboard.audd.io; without one it runs in a heavily rate-limited demo mode.
 
-**Scrobbling (optional, no database):** register a Last.fm API app at https://www.last.fm/api/account/create and set `LASTFM_API_KEY` + `LASTFM_SECRET` in the project env, with the app's callback URL pointing at `/api/lastfm`. Then the page shows **Connect Last.fm**; once connected, each match gets a **Confirm & scrobble** button. The session key lives in your browser's `localStorage` — Spindle stores nothing server-side yet.
+**Collection + scrobbling (Supabase):** create a free project at https://supabase.com, run `supabase/schema.sql` in its SQL editor (creates `pressings`, `plays`, and the service-only `profiles` table with row-level security), enable magic-link sign-in under Authentication, and set these in the project env:
+
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY` — handed to the browser via `/api/config`
+- `SUPABASE_SERVICE_KEY` — server-only; `/api/lastfm` uses it to store your Last.fm session key on your profile row
+
+Sign in on the page with an email magic link. Then each match gets **Confirm & log**: the play lands in your `plays` history and, if you've connected Last.fm, is scrobbled. The Last.fm session key never touches the browser — it lives in your Supabase row and only the server function reads it.
 
 Test the proxies in isolation (no API quota used):
 
@@ -64,10 +69,12 @@ node api/lastfm.test.mjs
 
 ## Roadmap
 
-- [ ] Data model + auth
-- [ ] Capture loop: mic → fingerprint → confirm → log + scrobble
+- [x] Data model + auth (Supabase magic link, `plays`/`pressings`)
+- [x] Capture loop: mic → fingerprint → confirm → log + scrobble
 - [ ] "Buy next" AI recommendations
 - [ ] Feed & social (later)
+
+Not yet verified against reality: no real record has been matched, logged, and scrobbled end-to-end. The tests cover the plumbing; a live smoke test is the next step.
 
 ## License
 
